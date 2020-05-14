@@ -53,6 +53,33 @@ def boundary_detection(image_path):
                         boundary.append((i, j))
     return boundary
 
+def boundary_detection_sorted(image_path):
+    """
+    Find pixels on the labeled boundary and store their (i, j) in a list
+    type image_path: str
+    rtype: List[tuple]
+    """
+    pixels = image_to_numpyarr(image_path)
+    directions = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+    boundary = []
+    x, y = None, None
+    for i in range(len(pixels) - 1):
+        for j in range(len(pixels[0]) - 1):
+            if is_label(pixels[i][j]):
+                for di, dj in directions:
+                    if is_label(pixels[i+di][j+dj]) is False:
+                        x, y = i, j
+                        boundary.append((i, j))
+                        break
+    clockwise = [(1, 0), (0, 1)]
+    for dx, dy in clockwise:
+        if is_label(pixels[x+dx][y+dy]):
+            x, y = x + dx, y + dy
+            boundary.append((x, y))
+        else:
+            x += 1 
+    return boundary
+
 def paint_boundary(image_path):
     """
     Find pixels on the labeled boundary and change their color to Red(in this case)
@@ -69,6 +96,20 @@ def paint_boundary(image_path):
                         pixels[i][j] = [255, 0, 0]
     return pixels
 
+def paint_boundary_sorted(image_path):
+    """
+    Find pixels on the labeled boundary and change their color to Red(in this case)
+    type image_path: str
+    rtype: numpy.ndarray
+    """
+    pixels = image_to_numpyarr(image_path)
+    bs = boundary_detection_sorted(image_path)
+
+    for x, y in bs:
+        pixels[x][y] = [0, 0, 255]
+
+    return pixels
+
 def flatten_numpyarr(image_path):
     """
     Transform the 2D numpy array of pixel datat into a flattend list of tuples
@@ -82,21 +123,39 @@ def flatten_numpyarr(image_path):
             fn1d.append(tuple(np2d[i][j]))
     return fn1d
 
+def flatten_numpyarr_sorted(image_path):
+    """
+    Transform the 2D numpy array of pixel datat into a flattend list of tuples
+    type image_path: str
+    rtype: List[tuples]
+    """
+    np2d = paint_boundary_sorted(image_path)
+    fn1d = []
+    for i in range(len(np2d)):
+        for j in range(len(np2d[0])):
+            fn1d.append(tuple(np2d[i][j]))
+    return fn1d
+
 if __name__ == "__main__":
 
     image_path = 'data/brush.JPG'
     image = Image.open(image_path, 'r')
     pixels = flatten_numpyarr(image_path)
     points = boundary_detection(image_path)
+    connected = boundary_detection_sorted(image_path)
+    pixels_sorted = flatten_numpyarr_sorted(image_path)
 
-    with open('boundary_positions.txt', 'w') as f:
-        for tuple in points:
+    print(len(points))
+    print(len(connected))
+
+    with open('boundary_positions_sorted.txt', 'w') as f:
+        for tuple in connected:
             f.write('%s %s\n' % tuple)
 
     im = Image.new('RGB', (image.size[0], image.size[1]))
-    im.putdata(pixels)
+    im.putdata(pixels_sorted)
     im.show()
-    im.save("boundary_extracted.jpeg")
+    im.save("boundary_extracted_sorted.jpeg")
     
 
         
