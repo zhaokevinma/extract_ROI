@@ -76,13 +76,9 @@ def mp(pixels):
             if isBlue(pixels[i][j]):
                 pos.append(j)
         new = []
-        count = 0
         for p in range(1, len(pos)):  # Second loop we filter the pos such that continuous red pixels only have 1 mark
-            if pos[p] - pos[p-1] > 10 or count > 20:
+            if pos[p] - pos[p-1] > 10:
                 new.append(pos[p])
-                count = 0
-            else:
-                count += 1
         mp.append(new)
     return mp
 

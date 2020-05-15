@@ -10,7 +10,7 @@ filterwarnings('ignore')
 @jit()
 def main():
 	# Load image as numpy array
-	image_path = 'contour.JPG'
+	image_path = 'data/contour.JPG'
 	image = Image.open(image_path, 'r')
 	pixels = np.array(image)
 
