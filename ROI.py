@@ -1,4 +1,5 @@
 from PIL import Image  # To open image and get raw pixel data
+from matplotlib import pyplot as plt  # To plot and save image from numpy array
 import numpy as np  # To reshape raw pixel data and access pixels[x][y]
 import statistics  # Use stdev to detemine whether a given pixel is brushed
 import bisect # To find where to insert an element in sorted list
@@ -31,7 +32,7 @@ def isRed(pixel):
     red = pixel[0]
     green = pixel[1]
     blue = pixel[2]
-    if red - green > 40 and red - blue > 40:  # There is more red in a red pixel 
+    if red - green > 50 and red - blue > 50 and abs(green - blue) < 30:  # There is more red in a red pixel 
         return True
     else:  # A normal CT pixel has similar/equal R G B values
         return False
@@ -70,16 +71,19 @@ def mp(pixels):
     """ 
     mp = []
     for i in range(len(pixels)):
-        # pos = [0]
-        pos = []
-        # new = []
+        pos = [0]
         for j in range(len(pixels[0])):  # First loop we add every red pixel to pos
             if isBlue(pixels[i][j]):
                 pos.append(j)
-        # for p in range(1, len(pos)):  # Second loop we filter the pos such that continuous red pixels only have 1 mark
-        #     if pos[p] - pos[p-1] > 10:
-        #         new.append(pos[p])
-        mp.append(pos)
+        new = []
+        count = 0
+        for p in range(1, len(pos)):  # Second loop we filter the pos such that continuous red pixels only have 1 mark
+            if pos[p] - pos[p-1] > 10 or count > 20:
+                new.append(pos[p])
+                count = 0
+            else:
+                count += 1
+        mp.append(new)
     return mp
 
 def mask(pixels, mp):
@@ -91,10 +95,10 @@ def mask(pixels, mp):
     for i in range(len(pixels)):
         if len(mp[i]) > 1:
             for j in range(mp[i][0]+1, mp[i][-1]):
-                # if isRed(pixels[i][j]) == False:
-                #     if (len(mp[i]) - bisect.bisect_right(mp[i], j)) % 2 == 1: # If we find out that the intersection happens odd times we know it's inside
-                pixels[i][j] = [0, 255, 0]  # If it's inside the polygon we paint it green
-
+                if isBlue(pixels[i][j]) == False:
+                    insrt = bisect.bisect_left(mp[i], j)
+                    if insrt % 2 == 1 or (len(mp[i]) - insrt) % 2 == 1: # If we find out that the intersection happens odd times we know it's inside
+                        pixels[i][j] = [0, 255, 0]  # If it's inside the polygon we paint it green
     return pixels
 
 def flatten_numpyarr(pixels):
@@ -114,17 +118,10 @@ if __name__ == "__main__":
 
     image_path = 'data/contour.JPG'
 
-    image = Image.open(image_path, 'r')
-    im = Image.new('RGB', (image.size[0], image.size[1]))
-
     pixels = image_to_numpyarr(image_path)
     blued = repaint_contour(pixels)
     mapped = mp(blued)
-
-    print(mapped)
     masked = mask(pixels, mapped)
-    flattened = flatten_numpyarr(masked)
 
-    im.putdata(flattened)
-    im.show()
-    im.save("filled.jpeg")
+    plt.imshow(masked)
+    plt.show()
